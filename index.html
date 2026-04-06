@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ペットかれんだー</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body, html { margin: 0; padding: 0; font-family: 'Rounded Mplus 1c', 'Noto Sans JP', sans-serif; background-color: #fff7ed; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input[type="radio"]:checked + span { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+    // --- アイコンコンポーネント ---
+    const Icon = ({ children, size=24, className="" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+    );
+    const Settings  = (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1-1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
+    const Plus      = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+    const Trash2    = (p) => <Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+    const Edit2     = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
+    const CheckCircle2 = (p) => <Icon {...p}><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></Icon>;
+    const Circle    = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/></Icon>;
+    const X         = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+    const PawPrint  = (p) => <Icon {...p}><g transform="scale(1.2,1) translate(-2,0)"><path d="M12 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m-6.5 4a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 5.5 6m13 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 18.5 6M12 11c-2.8 0-5 2-5 4.5 0 3.2 2 6.5 5 6.5s5-3.3 5-6.5c0-2.5-2.2-4.5-5-4.5"/></g></Icon>;
+    const CalendarIcon = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+    const Download  = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
+    const Upload    = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+    const User      = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+    const Cloud     = (p) => <Icon {...p}><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></Icon>;
+    const ArrowUp   = (p) => <Icon {...p}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></Icon>;
+    const RefreshCw = (p) => <Icon {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Icon>;
+    const Copy      = (p) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+    const Link2     = (p) => <Icon {...p}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Icon>;
+
+    // --- 定数定義 ---
+    const COLOR_PRESETS = [
+      { id:'rose',    name:'ローズ',    card:'bg-rose-50 text-rose-800 border-rose-200',     dot:'bg-rose-500'    },
+      { id:'red',     name:'レッド',    card:'bg-red-50 text-red-800 border-red-200',        dot:'bg-red-500'     },
+      { id:'orange',  name:'オレンジ',  card:'bg-orange-50 text-orange-800 border-orange-200', dot:'bg-orange-500'},
+      { id:'amber',   name:'アンバー',  card:'bg-amber-50 text-amber-800 border-amber-200',  dot:'bg-amber-500'   },
+      { id:'emerald', name:'エメラルド',card:'bg-emerald-50 text-emerald-800 border-emerald-200',dot:'bg-emerald-500'},
+      { id:'teal',    name:'ティール',  card:'bg-teal-50 text-teal-800 border-teal-200',     dot:'bg-teal-500'    },
+      { id:'sky',     name:'スカイ',    card:'bg-sky-50 text-sky-800 border-sky-200',        dot:'bg-sky-500'     },
+      { id:'blue',    name:'ブルー',    card:'bg-blue-50 text-blue-800 border-blue-200',     dot:'bg-blue-500'    },
+      { id:'purple',  name:'パープル',  card:'bg-purple-50 text-purple-800 border-purple-200',dot:'bg-purple-500' },
+      { id:'pink',    name:'ピンク',    card:'bg-pink-50 text-pink-800 border-pink-200',     dot:'bg-pink-500'    },
+      { id:'gray',    name:'グレー',    card:'bg-gray-50 text-gray-800 border-gray-200',     dot:'bg-gray-500'    },
+    ];
+
+    const CATEGORIES = [
+      { id:'hospital_visit',    label:'病院（通院）',        defaultColorId:'rose'    },
+      { id:'hospital_vaccine',  label:'病院（予防接種）',    defaultColorId:'red'     },
+      { id:'shampoo',           label:'シャンプー・カット',  defaultColorId:'sky'     },
+      { id:'food',              label:'ごはん',              defaultColorId:'amber'   },
+      { id:'flea_tick',         label:'ノミ・ダニ薬',        defaultColorId:'emerald' },
+      { id:'filaria',           label:'フィラリア薬',        defaultColorId:'teal'    },
+      { id:'medicine',          label:'くすり',              defaultColorId:'purple'  },
+      { id:'birthday',          label:'誕生日',              defaultColorId:'pink'    },
+      { id:'anniversary',       label:'記念日',              defaultColorId:'rose'    },
+      { id:'other',             label:'その他（任意設定）',  defaultColorId:'gray'    },
+    ];
+
+    // =========================================================
+    // クラウド同期ユーティリティ（Google Apps Script バックエンド）
+    //
+    // GAS の仕組み:
+    //   GET  → doGet()  で読み取り（redirect: follow で透過的に動作）
+    //   POST → doPost() で書き込み（Content-Type: text/plain で CORS preflight 回避）
+    //
+    // 合言葉がそのまま GAS ScriptProperties のキーになる
+    // =========================================================
+
+    // ★★★ ここにデプロイした Google Apps Script のウェブアプリ URL を貼り付け ★★★
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwiwDadr5zt9mXj1qFVwoMWSF7DjS4SO_l62MJFsAsf2kYmoCkPgPFFXZtqvU7K0gM5/exec';
+
+    const cloudPush = async (passphrase, data) => {
+      // text/plain を使うことで CORS preflight (OPTIONS) を回避
+      // GAS 側の doPost で処理され、302 リダイレクト後にレスポンスが返る
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ key: passphrase, data: JSON.stringify(data) }),
+        redirect: 'follow'
+      });
+    };
+
+    const cloudPull = async (passphrase) => {
+      const url = GAS_URL + '?key=' + encodeURIComponent(passphrase);
+      const resp = await fetch(url, { redirect: 'follow' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = await resp.json();
+      if (!json.ok || !json.data) return null;
+      return JSON.parse(json.data);
+    };
+
+    // --- ロジック ---
+    const formatCurrency = (value) => {
+      if (!value) return '';
+      const num = String(value).replace(/[^0-9]/g, '');
+      if (!num) return '';
+      return Number(num).toLocaleString('ja-JP');
+    };
+    const parseCurrency = (value) => String(value).replace(/[^0-9]/g, '');
+
+    const calculateAge = (birthDateString) => {
+      if (!birthDateString) return '';
+      const today = new Date(), birthDate = new Date(birthDateString);
+      let ageYears = today.getFullYear() - birthDate.getFullYear();
+      let ageMonths = today.getMonth() - birthDate.getMonth();
+      if (ageMonths < 0 || (ageMonths === 0 && today.getDate() < birthDate.getDate())) { ageYears--; ageMonths += 12; }
+      if (ageYears < 0) return '';
+      if (ageYears === 0) return `${ageMonths}ヶ月`;
+      return `${ageYears}歳`;
+    };
+
+    const getGenderColor = (gender) => {
+      if (gender === 'male')   return 'bg-blue-100 text-blue-800 border-blue-200';
+      if (gender === 'female') return 'bg-pink-100 text-pink-800 border-pink-200';
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    };
+
+    const getDayOfWeekDate = (year, month, week, dayOfWeek) => {
+      const firstDayOfMonth = new Date(year, month - 1, 1);
+      let offset = dayOfWeek - firstDayOfMonth.getDay();
+      if (offset < 0) offset += 7;
+      let targetDate = 1 + offset + (week - 1) * 7;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      if (week === 5) { let lt = 1 + offset; while (lt + 7 <= daysInMonth) lt += 7; targetDate = lt; }
+      if (targetDate > daysInMonth) return null;
+      return new Date(year, month - 1, targetDate);
+    };
+
+    const generateTasksForMonth = (year, month, schedules, taskInstances) => {
+      const tasks = [], daysInMonth = new Date(year, month, 0).getDate();
+      schedules.forEach(sched => {
+        let dates = [];
+        if (sched.type === 'date') {
+          if (sched.condition.month === 'every' || parseInt(sched.condition.month) === month) {
+            const d = parseInt(sched.condition.day);
+            if (d <= daysInMonth) dates.push(new Date(year, month - 1, d));
+            else if (sched.condition.day === 31) dates.push(new Date(year, month, 0));
+          }
+        } else if (sched.type === 'dayOfWeek') {
+          if (sched.condition.month === 'every' || parseInt(sched.condition.month) === month) {
+            const d = getDayOfWeekDate(year, month, parseInt(sched.condition.week), parseInt(sched.condition.dayOfWeek));
+            if (d) dates.push(d);
+          }
+        } else if (sched.type === 'biweekly') {
+          let cur = new Date(sched.condition.startDate);
+          if (!isNaN(cur.getTime())) {
+            const ts = new Date(year, month - 1, 1), te = new Date(year, month, 0);
+            while (cur <= te) { if (cur >= ts) dates.push(new Date(cur)); cur.setDate(cur.getDate() + 14); }
+          }
+        } else if (sched.type === 'bimonthly') {
+          if (Math.abs(month - parseInt(sched.condition.startMonth)) % 2 === 0) {
+            const d = parseInt(sched.condition.day);
+            if (d <= daysInMonth) dates.push(new Date(year, month - 1, d));
+            else if (sched.condition.day === 31) dates.push(new Date(year, month, 0));
+          }
+        } else if (sched.type === 'spot') {
+          const d = new Date(sched.condition.date);
+          if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() + 1 === month) dates.push(d);
+        }
+        dates.forEach(d => {
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const taskId = `${sched.id}_${dateStr}`;
+          const inst = taskInstances.find(ti => ti.id === taskId);
+          tasks.push({
+            id: taskId, scheduleId: sched.id, petId: sched.petId || 'all',
+            title: inst && inst.customTitle !== undefined ? inst.customTitle : sched.title,
+            categoryId: sched.categoryId, colorId: sched.colorId, date: dateStr, dateObj: d,
+            isCompleted: inst ? inst.isCompleted : false,
+            amount: inst && inst.amount !== undefined ? inst.amount : (sched.defaultAmount || '')
+          });
+        });
+      });
+      return tasks.sort((a, b) => a.date.localeCompare(b.date));
+    };
+
+    const formatConditionText = (sched) => {
+      switch(sched.type) {
+        case 'date': return `${sched.condition.month === 'every' ? '毎月' : sched.condition.month + '月'}${sched.condition.day === 31 ? '末日' : sched.condition.day + '日'}`;
+        case 'dayOfWeek': return `${sched.condition.month === 'every' ? '毎月' : sched.condition.month + '月'} ${sched.condition.week == 5 ? '最終' : '第' + sched.condition.week}${ ['日','月','火','水','木','金','土'][sched.condition.dayOfWeek]}曜日`;
+        case 'biweekly': return `${sched.condition.startDate || '未設定'} から隔週`;
+        case 'bimonthly': return `${sched.condition.startMonth}月から隔月 ${sched.condition.day === 31 ? '末日' : sched.condition.day + '日'}`;
+        case 'spot': return `${sched.condition.date || '未設定'} (スポット)`;
+        default: return '';
+      }
+    };
+
+    // =========================================================
+    // ScheduleForm
+    // =========================================================
+    const ScheduleForm = ({ initialData, onSave, onCancel, pets }) => {
+      const [form, setForm] = useState(initialData || {
+        title: CATEGORIES[0].label, categoryId: CATEGORIES[0].id, colorId: CATEGORIES[0].defaultColorId,
+        type: 'date', petId: 'all', defaultAmount: '', condition: { month: 'every', day: 1 }
+      });
+
+      const handleCategoryChange = (e) => {
+        const cat = CATEGORIES.find(c => c.id === e.target.value);
+        if (!cat) return;
+        setForm(prev => ({
+          ...prev, categoryId: cat.id, colorId: cat.defaultColorId,
+          title: CATEGORIES.some(c => c.label === prev.title) || prev.title === '' ? cat.label : prev.title
+        }));
+      };
+
+      const updateCondition = (key, value) => setForm(prev => ({ ...prev, condition: { ...prev.condition, [key]: value } }));
+
+      const handleTypeChange = (type) => {
+        const conds = {
+          date: { month: 'every', day: 1 }, dayOfWeek: { month: 'every', week: 1, dayOfWeek: 0 },
+          biweekly: { startDate: new Date().toISOString().split('T')[0] },
+          bimonthly: { startMonth: 1, day: 1 }, spot: { date: new Date().toISOString().split('T')[0] }
+        };
+        setForm(prev => ({ ...prev, type, condition: conds[type] || {} }));
+      };
+
+      const handleSubmit = (e) => { e.preventDefault(); document.activeElement?.blur(); setTimeout(() => onSave(form), 50); };
+      const handleCancel = () => { document.activeElement?.blur(); onCancel(); };
+
+      return (
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">対象のペット</label>
+            <select value={form.petId} onChange={e=>setForm({...form, petId: e.target.value})} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none">
+              <option value="all">全員・共通</option>
+              {pets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">カテゴリ</label>
+            <select value={form.categoryId} onChange={handleCategoryChange} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none">
+              {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">タスク名</label>
+            <input type="text" required value={form.title} onChange={e=>setForm({...form, title: e.target.value})} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none" placeholder="例: いつもの病院" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">予定金額（デフォルト）</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-bold">¥</span></div>
+              <input type="text" inputMode="numeric" value={formatCurrency(form.defaultAmount)} onChange={e => setForm({...form, defaultAmount: parseCurrency(e.target.value)})} className="w-full pl-8 border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none text-right font-bold" placeholder="0" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">背景色</label>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PRESETS.map(c => (
+                <button key={c.id} type="button" onClick={() => setForm({...form, colorId: c.id})} className={`w-8 h-8 rounded-full border-2 ${c.dot} ${form.colorId === c.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'border-transparent hover:scale-110'} transition-transform`} title={c.name} />
+              ))}
+            </div>
+          </div>
+          <div className="pt-2 border-t border-orange-100">
+            <label className="block text-sm font-bold text-gray-700 mb-2">繰り返しの設定</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+              {[{id:'date',label:'日にち指定'},{id:'dayOfWeek',label:'曜日指定'},{id:'biweekly',label:'隔週'},{id:'bimonthly',label:'隔月'},{id:'spot',label:'スポット'}].map(t => (
+                <label key={t.id} className={`flex items-center justify-center p-2 rounded-lg border text-sm cursor-pointer transition-colors ${form.type === t.id ? 'bg-orange-100 border-orange-500 text-orange-800 font-bold' : 'bg-white border-orange-200 text-gray-600 hover:bg-orange-50'}`}>
+                  <input type="radio" name="schedType" value={t.id} checked={form.type === t.id} onChange={() => handleTypeChange(t.id)} className="hidden" /><span>{t.label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+              {form.type === 'date' && (
+                <div className="flex items-center gap-2">
+                  <select value={form.condition.month} onChange={e=>updateCondition('month', e.target.value)} className="border border-orange-200 p-2 rounded bg-white">
+                    <option value="every">毎月</option>{[...Array(12)].map((_,i)=><option key={i+1} value={i+1}>{i+1}月</option>)}
+                  </select>
+                  <span className="text-gray-600">の</span>
+                  <select value={form.condition.day} onChange={e=>updateCondition('day', parseInt(e.target.value))} className="border border-orange-200 p-2 rounded bg-white">
+                    {[...Array(30)].map((_,i)=><option key={i+1} value={i+1}>{i+1}日</option>)}<option value={31}>末日</option>
+                  </select>
+                </div>
+              )}
+              {form.type === 'dayOfWeek' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <select value={form.condition.month} onChange={e=>updateCondition('month', e.target.value)} className="border border-orange-200 p-2 rounded bg-white">
+                    <option value="every">毎月</option>{[...Array(12)].map((_,i)=><option key={i+1} value={i+1}>{i+1}月</option>)}
+                  </select>
+                  <span className="text-gray-600">の</span>
+                  <select value={form.condition.week} onChange={e=>updateCondition('week', parseInt(e.target.value))} className="border border-orange-200 p-2 rounded bg-white">
+                    {[1,2,3,4].map(i=><option key={i} value={i}>第{i}</option>)}<option value={5}>最終</option>
+                  </select>
+                  <select value={form.condition.dayOfWeek} onChange={e=>updateCondition('dayOfWeek', parseInt(e.target.value))} className="border border-orange-200 p-2 rounded bg-white">
+                    {['日','月','火','水','木','金','土'].map((d,i)=><option key={i} value={i}>{d}曜日</option>)}
+                  </select>
+                </div>
+              )}
+              {form.type === 'biweekly' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">開始日:</span>
+                  <input type="date" required value={form.condition.startDate} onChange={e=>updateCondition('startDate', e.target.value)} className="border border-orange-200 p-2 rounded bg-white" />
+                  <span className="text-gray-600">から隔週</span>
+                </div>
+              )}
+              {form.type === 'bimonthly' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">開始月:</span>
+                  <select value={form.condition.startMonth} onChange={e=>updateCondition('startMonth', parseInt(e.target.value))} className="border border-orange-200 p-2 rounded bg-white">
+                    {[...Array(12)].map((_,i)=><option key={i+1} value={i+1}>{i+1}月</option>)}
+                  </select>
+                  <span className="text-gray-600">から隔月の</span>
+                  <select value={form.condition.day} onChange={e=>updateCondition('day', parseInt(e.target.value))} className="border border-orange-200 p-2 rounded bg-white">
+                    {[...Array(30)].map((_,i)=><option key={i+1} value={i+1}>{i+1}日</option>)}<option value={31}>末日</option>
+                  </select>
+                </div>
+              )}
+              {form.type === 'spot' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">日付:</span>
+                  <input type="date" required value={form.condition.date} onChange={e=>updateCondition('date', e.target.value)} className="border border-orange-200 p-2 rounded bg-white" />
+                </div>
+              )}
+            </div>
+          </div>
+          {/* スマホでキーボードが出たときにボタンが隠れないよう pb-44 */}
+          <div className="flex space-x-3 pt-4 pb-44 sm:pb-4 border-t border-orange-100">
+            <button type="button" onClick={handleCancel} className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">キャンセル</button>
+            <button type="submit" className="flex-1 px-4 py-3 text-white bg-orange-500 hover:bg-orange-600 rounded-xl font-bold transition-colors shadow-sm">保存する</button>
+          </div>
+        </form>
+      );
+    };
+
+    // =========================================================
+    // ScheduleManagerModal
+    // =========================================================
+    const ScheduleManagerModal = ({ isOpen, onClose, schedules, setSchedules, pets }) => {
+      const [editingSchedule, setEditingSchedule] = useState(null);
+      const [isFormOpen, setIsFormOpen] = useState(false);
+      const [deletingId, setDeletingId] = useState(null);
+      if (!isOpen) return null;
+
+      const handleSave = (sched) => {
+        if (sched.id) setSchedules(schedules.map(s => s.id === sched.id ? sched : s));
+        else setSchedules([...schedules, { ...sched, id: Date.now().toString() }]);
+        setIsFormOpen(false);
+      };
+      const executeDelete = (id) => { setSchedules(schedules.filter(s => s.id !== id)); setDeletingId(null); };
+
+      return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
+          <div className="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center p-4 border-b border-orange-100 bg-orange-50 text-orange-900">
+              <h2 className="font-bold text-lg flex items-center"><Settings size={20} className="mr-2"/> スケジュール設定</h2>
+              <button onClick={onClose} className="p-2 hover:bg-orange-200 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {isFormOpen ? (
+                <ScheduleForm initialData={editingSchedule} onSave={handleSave} onCancel={() => setIsFormOpen(false)} pets={pets} />
+              ) : (
+                <div className="p-4 space-y-4 pb-24">
+                  <button onClick={() => { setEditingSchedule(null); setIsFormOpen(true); }} className="w-full py-4 border-2 border-dashed border-orange-300 text-orange-600 rounded-xl hover:bg-orange-50 hover:border-orange-500 transition-colors flex items-center justify-center font-bold">
+                    <Plus size={20} className="mr-2" /> 新しいタスクを追加する
+                  </button>
+                  {schedules.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400"><PawPrint size={48} className="mx-auto mb-4 opacity-50" /><p>登録されているスケジュールはありません。</p></div>
+                  ) : (
+                    <div className="space-y-3">
+                      {schedules.map(s => {
+                        const cc = COLOR_PRESETS.find(c => c.id === s.colorId) || COLOR_PRESETS[0];
+                        return (
+                          <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${cc.dot} mr-3 flex-shrink-0`}></div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-gray-800 truncate">{s.title}</h3>
+                              <p className="text-xs text-gray-500 mt-0.5">{formatConditionText(s)}</p>
+                              {s.defaultAmount && <p className="text-xs font-bold text-orange-600 mt-0.5">¥{formatCurrency(s.defaultAmount)}</p>}
+                            </div>
+                            {s.autoGenerated === 'birthday' ? (
+                              <div className="text-[10px] text-pink-500 font-bold bg-pink-50 border border-pink-200 px-2 py-1 rounded ml-2 whitespace-nowrap">自動生成<br/>(編集不可)</div>
+                            ) : deletingId === s.id ? (
+                              <div className="flex flex-col items-end ml-2 space-y-1">
+                                <span className="text-[10px] text-red-500 font-bold">削除しますか？</span>
+                                <div className="flex space-x-1">
+                                  <button onClick={() => setDeletingId(null)} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-bold">やめる</button>
+                                  <button onClick={() => executeDelete(s.id)} className="px-2 py-1 bg-red-500 text-white rounded text-xs font-bold">削除</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex space-x-1 ml-2">
+                                <button onClick={() => { setEditingSchedule(s); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18}/></button>
+                                <button onClick={() => setDeletingId(s.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // =========================================================
+    // PetForm / PetManagerModal
+    // =========================================================
+    const PetForm = ({ initialData, onSave, onCancel }) => {
+      const [form, setForm] = useState(initialData || { name: '', birthDate: '', gender: 'unknown', memo: '' });
+      const handleSubmit = (e) => { e.preventDefault(); document.activeElement?.blur(); setTimeout(() => onSave(form), 50); };
+      const handleCancel = () => { document.activeElement?.blur(); onCancel(); };
+      return (
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+          <div><label className="block text-sm font-bold text-gray-700 mb-1">お名前 *</label><input type="text" required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none" placeholder="ポチ" /></div>
+          <div><label className="block text-sm font-bold text-gray-700 mb-1">生年月日</label><input type="date" value={form.birthDate} onChange={e=>setForm({...form,birthDate:e.target.value})} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none" /></div>
+          <div><label className="block text-sm font-bold text-gray-700 mb-1">性別</label>
+            <select value={form.gender} onChange={e=>setForm({...form,gender:e.target.value})} className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none">
+              <option value="unknown">不明 / 選択しない</option><option value="male">男の子（オス）</option><option value="female">女の子（メス）</option>
+            </select>
+          </div>
+          <div><label className="block text-sm font-bold text-gray-700 mb-1">備考</label><textarea value={form.memo} onChange={e=>setForm({...form,memo:e.target.value})} rows="3" className="w-full border border-orange-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-orange-400 outline-none" placeholder="アレルギーや好きなものなど"></textarea></div>
+          <div className="flex space-x-3 pt-4 pb-20 sm:pb-4 border-t border-orange-100">
+            <button type="button" onClick={handleCancel} className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">キャンセル</button>
+            <button type="submit" className="flex-1 px-4 py-3 text-white bg-orange-500 hover:bg-orange-600 rounded-xl font-bold transition-colors shadow-sm">保存する</button>
+          </div>
+        </form>
+      );
+    };
+
+    const PetManagerModal = ({ isOpen, onClose, pets, setPets, schedules, setSchedules }) => {
+      const [editingPet, setEditingPet] = useState(null);
+      const [isFormOpen, setIsFormOpen] = useState(false);
+      const [deletingId, setDeletingId] = useState(null);
+      if (!isOpen) return null;
+
+      const handleSave = (pet) => {
+        const newPetId = pet.id || Date.now().toString();
+        const petData = { ...pet, id: newPetId };
+        setPets(prev => pet.id ? prev.map(p => p.id === pet.id ? petData : p) : [...prev, petData]);
+        let ns = [...schedules];
+        const ei = ns.findIndex(s => s.petId === newPetId && s.autoGenerated === 'birthday');
+        if (petData.birthDate) {
+          const [,month,day] = petData.birthDate.split('-');
+          const bd = { id: ei>=0 ? ns[ei].id : Date.now().toString()+'_bd', title:`${petData.name} の誕生日`, categoryId:'birthday', colorId:'pink', type:'date', petId:newPetId, condition:{month:parseInt(month,10),day:parseInt(day,10)}, autoGenerated:'birthday' };
+          if (ei>=0) ns[ei] = bd; else ns.push(bd);
+        } else if (ei>=0) ns.splice(ei,1);
+        setSchedules(ns);
+        setIsFormOpen(false);
+      };
+
+      const executeDelete = (id) => {
+        setPets(prev => prev.filter(p => p.id !== id));
+        setSchedules(prev => prev.filter(s => !(s.petId === id && s.autoGenerated === 'birthday')).map(s => s.petId === id ? { ...s, petId: 'all' } : s));
+        setDeletingId(null);
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-start">
+          <div className="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
+            <div className="flex justify-between items-center p-4 border-b border-orange-100 bg-orange-50 text-orange-900">
+              <h2 className="font-bold text-lg flex items-center"><User size={20} className="mr-2"/> ペットの登録・管理</h2>
+              <button onClick={onClose} className="p-2 hover:bg-orange-200 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {isFormOpen ? (
+                <PetForm initialData={editingPet} onSave={handleSave} onCancel={() => setIsFormOpen(false)} />
+              ) : (
+                <div className="p-4 space-y-4 pb-24">
+                  <button onClick={() => { setEditingPet(null); setIsFormOpen(true); }} className="w-full py-4 border-2 border-dashed border-orange-300 text-orange-600 rounded-xl hover:bg-orange-50 hover:border-orange-500 transition-colors flex items-center justify-center font-bold">
+                    <Plus size={20} className="mr-2" /> 新しいペットを登録する
+                  </button>
+                  {pets.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400"><PawPrint size={48} className="mx-auto mb-4 opacity-50" /><p>登録されているペットはいません。</p></div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pets.map(p => (
+                        <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mr-3 flex-shrink-0 font-bold text-lg">{p.name.charAt(0)}</div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-gray-800 truncate">{p.name}</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{p.gender==='male'?'男の子':p.gender==='female'?'女の子':'性別不明'}{p.birthDate ? ` / ${p.birthDate}` : ''}</p>
+                          </div>
+                          {deletingId === p.id ? (
+                            <div className="flex flex-col items-end ml-2 space-y-1">
+                              <span className="text-[10px] text-red-500 font-bold">削除しますか？</span>
+                              <div className="flex space-x-1">
+                                <button onClick={() => setDeletingId(null)} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-bold">やめる</button>
+                                <button onClick={() => executeDelete(p.id)} className="px-2 py-1 bg-red-500 text-white rounded text-xs font-bold">削除</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-1 ml-2">
+                              <button onClick={() => { setEditingPet(p); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18}/></button>
+                              <button onClick={() => setDeletingId(p.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // =========================================================
+    // ShareModal（クラウド共有モーダル）— 合言葉 + Google Apps Script
+    // =========================================================
+    const ShareModal = ({ isOpen, onClose, sharedGroupId, setSharedGroupId, syncStatus, onManualSync }) => {
+      const [inputVal, setInputVal] = useState(sharedGroupId);
+      useEffect(() => { if (isOpen) setInputVal(sharedGroupId); }, [isOpen, sharedGroupId]);
+      if (!isOpen) return null;
+
+      const handleSave = () => {
+        document.activeElement?.blur();
+        setTimeout(() => {
+          const id = inputVal.trim();
+          setSharedGroupId(id);
+          localStorage.setItem('petSharedGroupId', id);
+          onClose();
+        }, 100);
+      };
+
+      const statusInfo = {
+        idle:    { color: 'text-gray-400',    label: '待機中'      },
+        syncing: { color: 'text-orange-500',  label: '同期中...'   },
+        ok:      { color: 'text-emerald-600', label: '✓ 同期済み' },
+        error:   { color: 'text-red-500',     label: '⚠ 同期失敗' },
+      }[syncStatus] || { color: 'text-gray-400', label: '' };
+
+      const isGasConfigured = GAS_URL && !GAS_URL.includes('ここにデプロイIDを貼り付け');
+
+      return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-lg text-orange-900 flex items-center"><Cloud size={20} className="mr-2 text-orange-500" /> 家族と共有する</h2>
+              <button onClick={onClose} className="p-2 hover:bg-orange-100 text-gray-500 rounded-full"><X size={20}/></button>
+            </div>
+
+            {!isGasConfigured && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-sm text-red-700 leading-relaxed">
+                <p className="font-bold mb-1">⚠ 初期設定が必要です</p>
+                <p>HTMLコード冒頭の <code className="bg-red-100 px-1 rounded text-xs">GAS_URL</code> に、デプロイした Google Apps Script のウェブアプリURLを設定してください。</p>
+              </div>
+            )}
+
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-4 space-y-2 text-sm text-gray-700 leading-relaxed">
+              <p>「<strong>合言葉</strong>」を設定するとデータが自動でクラウド（Google Apps Script）に保存されます。</p>
+              <p>家族のスマホで同じページを開いて同じ合言葉を入れると、<strong>約30秒ごとに自動同期</strong>されます。</p>
+              <p className="text-xs text-gray-500 border-t border-orange-100 pt-2">※合言葉を知っている人は誰でもデータを読み書きできます。推測されにくい合言葉をお使いください。</p>
+            </div>
+
+            {sharedGroupId && (
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
+                <span className="text-sm text-gray-600">現在の同期状態</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-sm font-bold ${statusInfo.color}`}>{statusInfo.label}</span>
+                  <button onClick={onManualSync} title="今すぐ同期" className="p-1 text-orange-400 hover:text-orange-600">
+                    <RefreshCw size={15} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-5">
+              <label className="block text-sm font-bold text-gray-700 mb-1">合言葉 (半角英数字)</label>
+              <input type="text" value={inputVal} onChange={e => setInputVal(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))} className="w-full border border-orange-200 rounded-lg p-3 bg-white focus:ring-2 focus:ring-orange-400 outline-none font-bold text-lg text-center tracking-widest" placeholder="例: suzuki-fam123" disabled={!isGasConfigured} />
+              <div className="text-right mt-1.5">
+                <button onClick={() => setInputVal(Math.random().toString(36).substring(2, 10))} className="text-xs text-orange-600 hover:underline" disabled={!isGasConfigured}>ランダムな合言葉を生成</button>
+              </div>
+            </div>
+
+            <button onClick={handleSave} disabled={!isGasConfigured} className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl shadow-sm transition-colors">
+              {inputVal ? 'この合言葉で同期する' : 'クラウド共有をオフにする'}
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // =========================================================
+    // App（メイン）
+    // =========================================================
+    const App = () => {
+      const [pets,          setPets]          = useState(() => { try { return JSON.parse(localStorage.getItem('petProfiles'))     || []; } catch(e) { return []; } });
+      const [schedules,     setSchedules]     = useState(() => { try { return JSON.parse(localStorage.getItem('petSchedules'))    || []; } catch(e) { return []; } });
+      const [taskInstances, setTaskInstances] = useState(() => { try { return JSON.parse(localStorage.getItem('petTaskInstances'))|| []; } catch(e) { return []; } });
+
+      const [displayMode,       setDisplayMode]       = useState('current');
+      const [isSettingsOpen,    setIsSettingsOpen]    = useState(false);
+      const [isPetManagerOpen,  setIsPetManagerOpen]  = useState(false);
+      const [isShareModalOpen,  setIsShareModalOpen]  = useState(false);
+      const [notification,      setNotification]      = useState(null);
+      const [holidays,          setHolidays]          = useState({});
+
+      // ---- クラウド同期 ----
+      const [sharedGroupId, setSharedGroupId] = useState(() => localStorage.getItem('petSharedGroupId') || '');
+      const [syncStatus, setSyncStatus] = useState('idle');
+      const lastPushedRef = useRef('');
+      const lastPulledRef = useRef('');
+
+      // ローカルStorage保存
+      useEffect(() => {
+        localStorage.setItem('petProfiles',      JSON.stringify(pets));
+        localStorage.setItem('petSchedules',     JSON.stringify(schedules));
+        localStorage.setItem('petTaskInstances', JSON.stringify(taskInstances));
+      }, [pets, schedules, taskInstances]);
+
+      // 祝日API
+      useEffect(() => {
+        fetch('https://holidays-jp.github.io/api/v1/date.json')
+          .then(r => r.json()).then(setHolidays).catch(() => {});
+      }, []);
+
+      // モーダル開閉: スクロール位置を保存・復元
+      useEffect(() => {
+        const anyOpen = isSettingsOpen || isPetManagerOpen || isShareModalOpen;
+        if (anyOpen) {
+          const y = window.scrollY;
+          document.body.style.cssText = `position:fixed;top:-${y}px;width:100%;overflow-y:scroll`;
+        } else {
+          const saved = document.body.style.top;
+          document.body.style.cssText = '';
+          if (saved) window.scrollTo(0, parseInt(saved) * -1);
+        }
+        return () => { document.body.style.cssText = ''; };
+      }, [isSettingsOpen, isPetManagerOpen, isShareModalOpen]);
+
+      // ---- クラウドプル（即時 + 30秒ポーリング） ----
+      const doPull = useCallback(async () => {
+        if (!sharedGroupId) return;
+        try {
+          setSyncStatus('syncing');
+          const remote = await cloudPull(sharedGroupId);
+          if (!remote) { setSyncStatus('ok'); return; }
+          const remoteStr = JSON.stringify(remote);
+          if (remoteStr === lastPushedRef.current || remoteStr === lastPulledRef.current) {
+            setSyncStatus('ok'); return;
+          }
+          lastPulledRef.current = remoteStr;
+          setPets(remote.pets || []);
+          setSchedules(remote.schedules || []);
+          setTaskInstances(remote.taskInstances || []);
+          setSyncStatus('ok');
+          showNotification('クラウドからデータを取得しました');
+        } catch(e) {
+          console.error('Pull failed:', e);
+          setSyncStatus('error');
+        }
+      }, [sharedGroupId]);
+
+      useEffect(() => {
+        if (!sharedGroupId) { setSyncStatus('idle'); return; }
+        doPull();
+        const id = setInterval(doPull, 30_000);
+        return () => clearInterval(id);
+      }, [sharedGroupId, doPull]);
+
+      // ---- クラウドプッシュ（データ変更時、デバウンス2秒） ----
+      useEffect(() => {
+        if (!sharedGroupId) return;
+        const dataStr = JSON.stringify({ pets, schedules, taskInstances });
+        if (dataStr === lastPulledRef.current || dataStr === lastPushedRef.current) return;
+
+        setSyncStatus('syncing');
+        const timer = setTimeout(async () => {
+          try {
+            await cloudPush(sharedGroupId, { pets, schedules, taskInstances });
+            lastPushedRef.current = dataStr;
+            setSyncStatus('ok');
+          } catch(e) {
+            console.error('Push failed:', e);
+            setSyncStatus('error');
+          }
+        }, 2000);
+        return () => clearTimeout(timer);
+      }, [pets, schedules, taskInstances, sharedGroupId]);
+
+      // ---- 月データ ----
+      const displayMonths = useMemo(() => {
+        const today = new Date(), cy = today.getFullYear(), cm = today.getMonth() + 1;
+        const months = [];
+        if (displayMode === 'january') {
+          for (let i = 1; i <= 12; i++) months.push({ year: cy, month: i });
+        } else {
+          for (let i = 0; i < 12; i++) {
+            let y = cy, m = cm + i;
+            if (m > 12) { y++; m -= 12; }
+            months.push({ year: y, month: m });
+          }
+        }
+        return months;
+      }, [displayMode]);
+
+      const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
+      useEffect(() => setSelectedMonthIdx(0), [displayMode]);
+
+      const monthDataList = useMemo(() => displayMonths.map(m => {
+        const mTasks = generateTasksForMonth(m.year, m.month, schedules, taskInstances);
+        return { ...m, hasUncompleted: mTasks.some(t => !t.isCompleted), total: mTasks.reduce((s,t) => s + (parseInt(t.amount,10)||0), 0) };
+      }), [displayMonths, schedules, taskInstances]);
+
+      const activeMonth = monthDataList[selectedMonthIdx] || monthDataList[0];
+      const currentTasks = useMemo(() => activeMonth ? generateTasksForMonth(activeMonth.year, activeMonth.month, schedules, taskInstances) : [], [activeMonth, schedules, taskInstances]);
+
+      const toggleTaskCompletion = (id) => setTaskInstances(prev => {
+        const ex = prev.find(ti => ti.id === id);
+        return ex ? prev.map(ti => ti.id === id ? { ...ti, isCompleted: !ti.isCompleted } : ti) : [...prev, { id, isCompleted: true }];
+      });
+      const updateTaskAmount = (id, amount) => setTaskInstances(prev => {
+        const ex = prev.find(ti => ti.id === id);
+        return ex ? prev.map(ti => ti.id === id ? { ...ti, amount } : ti) : [...prev, { id, isCompleted: false, amount }];
+      });
+      const updateTaskTitle = (id, customTitle) => setTaskInstances(prev => {
+        const ex = prev.find(ti => ti.id === id);
+        return ex ? prev.map(ti => ti.id === id ? { ...ti, customTitle } : ti) : [...prev, { id, isCompleted: false, customTitle }];
+      });
+
+      const scrollToTask = (taskId) => {
+        const el = document.getElementById(`task-${taskId}`);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transform = 'scale(1.02)';
+        el.style.boxShadow = '0 0 0 2px #f97316';
+        setTimeout(() => { el.style.transform = ''; el.style.boxShadow = ''; }, 1000);
+      };
+
+      const calendarDays = useMemo(() => {
+        if (!activeMonth) return [];
+        const days = [];
+        const first = new Date(activeMonth.year, activeMonth.month - 1, 1).getDay();
+        const dim = new Date(activeMonth.year, activeMonth.month, 0).getDate();
+        for (let i = 0; i < first; i++) days.push(null);
+        for (let i = 1; i <= dim; i++) days.push(i);
+        return days;
+      }, [activeMonth]);
+
+      const tasksByDate = useMemo(() => {
+        const map = {};
+        currentTasks.forEach(t => { const d = t.dateObj.getDate(); if (!map[d]) map[d] = []; map[d].push(t); });
+        return map;
+      }, [currentTasks]);
+
+      const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
+
+      const isToday    = (d) => { const t = new Date(); return t.getFullYear()===activeMonth.year && t.getMonth()+1===activeMonth.month && t.getDate()===d; };
+      const isHoliday  = (d) => { const ds = `${activeMonth.year}-${String(activeMonth.month).padStart(2,'0')}-${String(d).padStart(2,'0')}`; return holidays[ds]!==undefined || new Date(activeMonth.year,activeMonth.month-1,d).getDay()===0; };
+      const isSaturday = (d) => new Date(activeMonth.year, activeMonth.month - 1, d).getDay() === 6;
+
+      const exportData = () => {
+        const blob = new Blob([JSON.stringify({pets,schedules,taskInstances},null,2)],{type:'application/json'});
+        const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:`ペットスケジュール_backup_${new Date().toISOString().slice(0,10)}.json`});
+        a.click(); URL.revokeObjectURL(a.href);
+      };
+      const importData = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (data.pets && data.schedules && data.taskInstances) {
+              setPets(data.pets); setSchedules(data.schedules); setTaskInstances(data.taskInstances);
+              showNotification('データを復元しました');
+            } else showNotification('無効なファイル形式です');
+          } catch { showNotification('ファイルの読み込みに失敗しました'); }
+        };
+        reader.readAsText(file); e.target.value = '';
+      };
+
+      // ヘッダーの同期ボタンのスタイル
+      const syncBtnCls = sharedGroupId
+        ? (syncStatus === 'error' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600')
+        : 'bg-orange-600 hover:bg-orange-700 text-white';
+
+      return (
+        <div className="max-w-3xl mx-auto bg-white min-h-[100dvh] shadow-xl relative pb-48 sm:pb-32">
+
+          <div className="sticky top-0 z-30 shadow-md">
+            <header className="bg-orange-500 text-white p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-bold flex items-center"><PawPrint size={24} className="mr-2" /> ペットかれんだー</h1>
+                <div className="flex space-x-2">
+                  <button onClick={(e) => { e.currentTarget.blur(); setIsShareModalOpen(true); }} className={`p-2 rounded-full transition-colors shadow-inner flex items-center ${syncBtnCls}`} title="家族と共有">
+                    <Cloud size={20} className={syncStatus==='syncing'&&sharedGroupId ? 'animate-pulse' : ''} />
+                    {sharedGroupId && (
+                      <span className="text-xs font-bold ml-1 hidden sm:inline">
+                        {syncStatus==='syncing' ? '同期中...' : syncStatus==='error' ? '同期失敗' : '同期オン'}
+                      </span>
+                    )}
+                  </button>
+                  <button onClick={(e) => { e.currentTarget.blur(); setIsPetManagerOpen(true); }} className="bg-orange-600 hover:bg-orange-700 p-2 rounded-full transition-colors shadow-inner"><User size={20}/></button>
+                  <button onClick={(e) => { e.currentTarget.blur(); setIsSettingsOpen(true); }} className="bg-orange-600 hover:bg-orange-700 p-2 rounded-full transition-colors shadow-inner"><Settings size={20}/></button>
+                </div>
+              </div>
+
+              {pets.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {pets.map(p => {
+                    const age = calculateAge(p.birthDate);
+                    return (
+                      <div key={p.id} className={`flex items-center px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${getGenderColor(p.gender)}`}>
+                        <span className="mr-1">{p.name}</span>{age && <span className="opacity-80">({age})</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex bg-orange-600 p-1 rounded-full">
+                <button onClick={() => setDisplayMode('current')} className={`flex-1 py-1.5 text-sm font-bold rounded-full transition-colors ${displayMode==='current' ? 'bg-white text-orange-600 shadow-sm' : 'text-orange-100 hover:bg-orange-500'}`}>現在月から12ヶ月</button>
+                <button onClick={() => setDisplayMode('january')} className={`flex-1 py-1.5 text-sm font-bold rounded-full transition-colors ${displayMode==='january' ? 'bg-white text-orange-600 shadow-sm' : 'text-orange-100 hover:bg-orange-500'}`}>1月から12月</button>
+              </div>
+            </header>
+
+            <div className="bg-orange-50 border-b border-orange-100 pt-3 pb-2 overflow-x-auto hide-scrollbar">
+              <div className="flex space-x-2 px-2 w-max">
+                {monthDataList.map((m, idx) => {
+                  const isActive = selectedMonthIdx === idx;
+                  return (
+                    <div key={idx} className="flex flex-col items-stretch">
+                      <button onClick={() => setSelectedMonthIdx(idx)} className={`w-[72px] flex-shrink-0 px-2 py-2 rounded-xl text-center transition-all relative ${isActive ? 'bg-orange-500 text-white shadow-md font-bold' : 'bg-white text-orange-800 hover:bg-orange-100 border border-orange-200'}`}>
+                        <span className="block text-lg leading-none">{m.month}月</span>
+                        <span className={`block text-[10px] mt-0.5 ${isActive ? 'text-orange-100' : 'text-orange-400'}`}>{m.year}年</span>
+                        {m.hasUncompleted && !isActive && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
+                      </button>
+                      <div className={`text-[10px] font-bold mt-1 text-right w-full pr-1 ${isActive ? 'text-orange-700' : 'text-gray-500'}`}>¥{m.total.toLocaleString()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <main className="p-4 space-y-6">
+            {/* カレンダー */}
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4">
+              <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+                {['日','月','火','水','木','金','土'].map((w,i) => (
+                  <div key={w} className={`font-bold pb-1 ${i===0?'text-red-500':i===6?'text-blue-500':'text-gray-500'}`}>{w}</div>
+                ))}
+                {calendarDays.map((d, i) => {
+                  const dayTasks = d ? tasksByDate[d] : null;
+                  return (
+                    <div key={i} onClick={() => dayTasks?.length && scrollToTask(dayTasks[0].id)} className={`min-h-[48px] p-1 border border-gray-50 rounded-lg flex flex-col items-center transition-colors ${d?(isToday(d)?'bg-orange-50 border-orange-200':'bg-white'):'bg-transparent'} ${dayTasks?.length?'cursor-pointer hover:bg-orange-50':''}`}>
+                      {d && <>
+                        <span className={`w-6 h-6 flex items-center justify-center rounded-full mb-1 text-sm ${isToday(d)?'bg-orange-500 text-white font-bold shadow-sm':isHoliday(d)?'text-red-500 font-medium':isSaturday(d)?'text-blue-500 font-medium':'text-gray-700 font-medium'}`}>{d}</span>
+                        <div className="flex flex-wrap justify-center gap-1 w-full px-0.5">
+                          {dayTasks?.map((t,ti) => { const cc=COLOR_PRESETS.find(c=>c.id===t.colorId)||COLOR_PRESETS[0]; return <div key={ti} className={`w-2 h-2 rounded-full ${cc.dot} ${t.isCompleted?'opacity-30':'opacity-100'}`} title={t.title}></div>; })}
+                        </div>
+                      </>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* タスク一覧 */}
+            <div>
+              <div className="flex justify-between items-end mb-4 px-1">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center"><CalendarIcon size={22} className="mr-2 text-orange-500"/>タスク一覧</h2>
+                <div className="text-sm font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">{currentTasks.filter(t=>t.isCompleted).length} / {currentTasks.length} 完了</div>
+              </div>
+              {currentTasks.length === 0 ? (
+                <div className="bg-orange-50 rounded-2xl border-2 border-dashed border-orange-200 p-8 text-center flex flex-col items-center">
+                  <PawPrint size={40} className="text-orange-200 mb-3" />
+                  <p className="text-orange-800 font-bold mb-1">この月の予定はありません</p>
+                  <p className="text-sm text-orange-600">右上の設定ボタンからスケジュールを追加できます。</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentTasks.map(task => {
+                    const cc = COLOR_PRESETS.find(c => c.id === task.colorId) || COLOR_PRESETS[0];
+                    return (
+                      <div id={`task-${task.id}`} key={task.id} className={`p-4 rounded-2xl border-2 transition-all duration-300 ${task.isCompleted ? 'bg-gray-50 border-gray-200 opacity-60' : `${cc.card} shadow-sm hover:shadow-md`}`}>
+                        <div className="flex items-start gap-4">
+                          <button onClick={() => toggleTaskCompletion(task.id)} className="mt-1 flex-shrink-0 hover:scale-110 transition-transform focus:outline-none">
+                            {task.isCompleted ? <CheckCircle2 size={28} className="text-gray-400"/> : <Circle size={28} className={cc.dot.replace('bg-','text-')}/>}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <span className="text-sm font-bold px-2.5 py-0.5 rounded-full bg-white bg-opacity-60 shadow-sm">
+                                {task.dateObj.getMonth()+1}/{task.dateObj.getDate()} ({['日','月','火','水','木','金','土'][task.dateObj.getDay()]})
+                              </span>
+                              {task.petId && task.petId !== 'all' && (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-200">
+                                  {pets.find(p=>p.id===task.petId)?.name||'不明'}
+                                </span>
+                              )}
+                            </div>
+                            <input type="text" value={task.title} onChange={e=>updateTaskTitle(task.id, e.target.value)} className={`font-bold text-lg w-full bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-orange-400 outline-none transition-colors px-1 py-0.5 -ml-1 ${task.isCompleted?'line-through text-gray-500':'text-gray-800'}`} placeholder="タスク名" />
+                            <div className="mt-2">
+                              <div className="relative max-w-[160px]">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none"><span className="text-gray-500 font-bold">¥</span></div>
+                                <input type="text" inputMode="numeric" placeholder="0" value={formatCurrency(task.amount)} onChange={e=>updateTaskAmount(task.id, parseCurrency(e.target.value))} className={`w-full pl-7 pr-3 py-1.5 text-right text-sm font-bold border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none transition-colors ${task.isCompleted?'bg-gray-100 text-gray-500 border-gray-200':'bg-white border-orange-200 text-gray-800 shadow-inner'}`} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-6 pb-2 text-center">
+              <button onClick={() => setIsSettingsOpen(true)} className="inline-flex items-center px-6 py-3 bg-white border border-orange-200 text-orange-600 rounded-full shadow-sm hover:bg-orange-50 font-bold transition-colors">
+                <Settings size={18} className="mr-2"/> スケジュールを追加・編集する
+              </button>
+            </div>
+
+            <div className="flex justify-center space-x-6 pt-4 pb-2">
+              <button onClick={exportData} className="text-xs text-gray-400 hover:text-gray-600 underline flex items-center"><Download size={14} className="mr-1"/> データを保存</button>
+              <input type="file" accept=".json" id="import-json" style={{display:'none'}} onChange={importData} />
+              <button onClick={() => document.getElementById('import-json').click()} className="text-xs text-gray-400 hover:text-gray-600 underline flex items-center"><Upload size={14} className="mr-1"/> データを復元</button>
+            </div>
+
+            <div className="flex justify-center mt-8 mb-4">
+              <button onClick={() => window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center text-sm font-bold text-orange-600 bg-white hover:bg-orange-50 border border-orange-200 px-6 py-2.5 rounded-full shadow-sm transition-colors">
+                <ArrowUp size={16} className="mr-2"/> トップに戻る
+              </button>
+            </div>
+          </main>
+
+          <PetManagerModal isOpen={isPetManagerOpen} onClose={() => setIsPetManagerOpen(false)} pets={pets} setPets={setPets} schedules={schedules} setSchedules={setSchedules} />
+          <ScheduleManagerModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} schedules={schedules} setSchedules={setSchedules} pets={pets} />
+          <ShareModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            sharedGroupId={sharedGroupId}
+            setSharedGroupId={setSharedGroupId}
+            syncStatus={syncStatus}
+            onManualSync={doPull}
+          />
+
+          {notification && (
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-50 text-sm font-bold pointer-events-none animate-in fade-in slide-in-from-bottom-4">
+              {notification}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
